@@ -88,7 +88,6 @@ namespace wrench {
         // Create a list of "fake" tasks
         std::map<WorkflowTask *, double> fake_tasks;  // WorkflowTask, completion time
 
-        WRENCH_INFO("HERE1");
         // Insert all fake_tasks
         for (auto task : tasks) {
             fake_tasks[task] = -1.0;
@@ -97,7 +96,6 @@ namespace wrench {
         unsigned long num_scheduled_tasks = 0;
         double current_time = 0.0;
 
-        WRENCH_INFO("HERE2");
         while (num_scheduled_tasks < num_tasks) {
 
 //        WRENCH_INFO("ITERATION");
@@ -128,18 +126,19 @@ namespace wrench {
                     continue;
                 }
 
+                double real_task_duration = real_task->getFlops() / core_speed;
                 for (unsigned int j=0; j < num_hosts; j++) {
 //            WRENCH_INFO("LOOKING AT HOST %d: %.2lf", j, idle_date[j]);
                     if (idle_date[j] <= current_time) {
 //              WRENCH_INFO("SCHEDULING TASK on HOST %d", j);
-                        double new_time = current_time + real_task->getFlops() / core_speed;
+                        double new_time = current_time + real_task_duration;
                         fake_tasks[real_task] = new_time;
 
 //                        for (unsigned int k=0; k < num_tasks; k++) {
 ////                WRENCH_INFO("------> %.2lf", std::get<1>(fake_tasks[k]));
 //                        }
 
-                        idle_date[j] = current_time + real_task->getFlops() / core_speed;
+                        idle_date[j] = current_time + real_task_duration;
 //              WRENCH_INFO("SCHEDULED TASK %s on host %d from time %.2lf-%.2lf",
 //                          real_task->getID().c_str(), j, current_time,
 //                          current_time + real_task->getFlops() / core_speed);
