@@ -52,6 +52,9 @@ int Simulator::main(int argc, char **argv) {
         std::cerr << "    * \e[1mdax:filename\e[0m" << "\n";
         std::cerr << "      - A workflow imported from a DAX file" << "\n";
         std::cerr << "      - Files and Data dependencies are ignored. Only control dependencies are preserved" << "\n";
+        std::cerr << "    * \e[1mjson:filename\e[0m" << "\n";
+        std::cerr << "      - A workflow imported from a JSON file" << "\n";
+        std::cerr << "      - Files and Data dependencies are ignored. Only control dependencies are preserved" << "\n";
         std::cerr << "\n";
         std::cerr << "  \e[1;32m### algorithm options ###\e[0m" << "\n";
         std::cerr << "    * \e[1mstatic:levelbylevel-m\e[0m" << "\n";
@@ -426,7 +429,16 @@ Workflow *Simulator::createWorkflow(std::string workflow_spec) {
             throw std::invalid_argument("createWorkflow(): Invalid workflow specification " + workflow_spec);
         }
         try {
-            return createDAXWorkflow(tokens);
+            return createWorkflowFromFile("dax",tokens);
+        } catch (std::invalid_argument &e) {
+            throw;
+        }
+    } else if (tokens[0] == "json") {
+        if (tokens.size() != 2) {
+            throw std::invalid_argument("createWorkflow(): Invalid workflow specification " + workflow_spec);
+        }
+        try {
+            return createWorkflowFromFile("json",tokens);
         } catch (std::invalid_argument &e) {
             throw;
         }
@@ -537,14 +549,20 @@ Workflow *Simulator::createLevelsWorkflow(std::vector<std::string> spec_tokens) 
 
 }
 
-Workflow *Simulator::createDAXWorkflow(std::vector<std::string> spec_tokens) {
+Workflow *Simulator::createWorkflowFromFile(std::string type, std::vector<std::string> spec_tokens) {
     std::string filename = spec_tokens[1];
 
     Workflow *original_workflow = nullptr;
     try {
-        original_workflow = PegasusWorkflowParser::createWorkflowFromDAX(filename, "1");
+        if (type == "dax") {
+            original_workflow = PegasusWorkflowParser::createWorkflowFromDAX(filename, "1");
+        } else if (type == "json") {
+            original_workflow = PegasusWorkflowParser::createWorkflowFromJSON(filename, "1");
+        } else {
+            throw std::runtime_error("Unknown workflow file type " + type);
+        }
     } catch (std::invalid_argument &e) {
-        throw std::runtime_error("Cannot import workflow from DAX");
+        throw std::runtime_error("Cannot import workflow from file");
     }
 
     auto workflow = new Workflow();
@@ -576,7 +594,6 @@ Workflow *Simulator::createDAXWorkflow(std::vector<std::string> spec_tokens) {
     return workflow;
 
 }
-
 
 WMS *Simulator::createWMS(std::string hostname,
                           std::shared_ptr<BatchComputeService> batch_service,
