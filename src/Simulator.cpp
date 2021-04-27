@@ -160,7 +160,7 @@ int Simulator::main(int argc, char **argv) {
         std::cerr << "          Tasks in level n+1 are submitted to the batch queue as soon as all tasks in level n"
                   << "\n";
         std::cerr << "          have started. Timout behavior similar as that in the algorithm by Zhang et al." << "\n";
-        std::cerr << "        - levelclustering: the algorithm uses to cluster tasks in each level. Options are: "
+        std::cerr << "        - levelclustering: the algorithm used to cluster tasks in each level. Options are: "
                   << "\n";
         std::cerr << "          - one_job-m: the level is submitted as a single job" << "\n";
         std::cerr << "            - m: number of hosts used to execute each cluster" << "\n";
@@ -312,12 +312,15 @@ int Simulator::main(int argc, char **argv) {
     wms->addWorkflow(workflow, workflow_start_time);
 
     // Launch the simulation
+    auto now = time(0);
     try { WRENCH_INFO("Launching simulation!");
         simulation->launch();
     } catch (std::runtime_error &e) {
         std::cerr << "Simulation failed: " << e.what() << "\n";
         exit(1);
-    }WRENCH_INFO("Simulation done!");
+    }
+    auto elapsed = (time(0) - now);
+    WRENCH_INFO("Simulation done!");
 
     WorkflowUtil::printRAM();
 
@@ -326,6 +329,7 @@ int Simulator::main(int argc, char **argv) {
     std::cout << "TOTAL QUEUE WAIT SECONDS=" << this->total_queue_wait_time << "\n";
     std::cout << "USED NODE SECONDS=" << this->used_node_seconds << "\n";
     std::cout << "WASTED NODE SECONDS=" << this->wasted_node_seconds << "\n";
+    std::cout << "SIMULATION TIME=" << elapsed << "\n";
     std::cout << "CSV LOG FILE=" << csv_batch_log << "\n";
 
     if (argc == 9) {
