@@ -22,7 +22,7 @@ StaticClusteringWMS::StaticClusteringWMS(Simulator *simulator, std::string hostn
 
 
 void StaticClusteringWMS::processEventStandardJobCompletion(std::shared_ptr<StandardJobCompletedEvent> e) {
-    StandardJob *job = e->standard_job;
+    auto job = e->standard_job;
     WRENCH_INFO("Job %s has completed", job->getName().c_str());
 
 
@@ -335,7 +335,7 @@ void StaticClusteringWMS::submitClusteredJob(ClusteredJob *clustered_job) {
             (unsigned long) (1 + (makespan * EXECUTION_TIME_FUDGE_FACTOR) / 60.0)); //time in minutes
     batch_job_args["-c"] = "1"; //number of cores per node
 
-    StandardJob *standard_job = this->job_manager->createStandardJob(clustered_job->getTasks(), {});
+    auto standard_job = this->job_manager->createStandardJob(clustered_job->getTasks(), {});
     WRENCH_INFO("Created a batch job with with batch arguments: %s:%s:%s",
                 batch_job_args["-N"].c_str(),
                 batch_job_args["-t"].c_str(),

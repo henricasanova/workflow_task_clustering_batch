@@ -18,19 +18,19 @@ namespace wrench {
 
     public:
 
-        PlaceHolderJob(PilotJob *pilot_job,
+        PlaceHolderJob(std::shared_ptr<PilotJob> pilot_job,
                        unsigned long num_hosts,
                        std::vector<WorkflowTask *> tasks,
                        unsigned long start_level,
                        unsigned long end_level);
 
         // For lbl
-        PlaceHolderJob(PilotJob *pilot_job,
+        PlaceHolderJob(std::shared_ptr<PilotJob> pilot_job,
                        ClusteredJob *clustered_job,
                        unsigned long start_level,
                        unsigned long end_level);
 
-        PilotJob *pilot_job;
+        std::shared_ptr<PilotJob> pilot_job;
         unsigned long num_hosts;
         std::vector<WorkflowTask *> tasks;
         unsigned long start_level;

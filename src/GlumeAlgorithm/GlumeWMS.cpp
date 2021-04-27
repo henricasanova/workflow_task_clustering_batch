@@ -321,8 +321,8 @@ namespace wrench {
         }
 
         WRENCH_INFO("Got a Pilot Job Start event e->pilot_job = %ld, this->pending->pilot_job = %ld (%s)",
-                    (unsigned long) e->pilot_job,
-                    (unsigned long) this->pending_placeholder_job->pilot_job,
+                    (unsigned long) e->pilot_job.get(),
+                    (unsigned long) this->pending_placeholder_job->pilot_job.get(),
                     this->pending_placeholder_job->pilot_job->getName().c_str());
 
         if (e->pilot_job != this->pending_placeholder_job->pilot_job) {
@@ -339,7 +339,7 @@ namespace wrench {
 
         for (auto task : placeholder_job->tasks) {
             if (task->getState() == WorkflowTask::State::READY  and (placeholder_job->num_standard_job_submitted < placeholder_job->num_hosts)) {
-                StandardJob *standard_job = this->job_manager->createStandardJob(task, {});
+                auto standard_job = this->job_manager->createStandardJob(task, {});
 
                 // output_string += " " + task->getID();
 
@@ -410,7 +410,7 @@ namespace wrench {
             // Cancel pending pilot job if any
             WRENCH_INFO("Canceling pending placeholder job (placeholder=%ld,  pilot_job=%ld / %s",
                         (unsigned long) this->pending_placeholder_job,
-                        (unsigned long) this->pending_placeholder_job->pilot_job,
+                        (unsigned long) this->pending_placeholder_job->pilot_job.get(),
                         this->pending_placeholder_job->pilot_job->getName().c_str());
             this->job_manager->terminateJob(this->pending_placeholder_job->pilot_job);
             this->pending_placeholder_job = nullptr;
@@ -518,14 +518,13 @@ namespace wrench {
                 (task->getTopLevel() == completed_task->getTopLevel()) and
                 (ph->num_standard_job_submitted < ph->num_hosts)) {
 
-                    StandardJob *standard_job = this->job_manager->createStandardJob(task, {});
+                    auto standard_job = this->job_manager->createStandardJob(task, {});
                     // hmm
                     WRENCH_INFO("Submitting task %s  as part of placeholder job %ld-%ld",
                                 task->getID().c_str(), placeholder_job->start_level, placeholder_job->end_level);
                     this->job_manager->submitJob(standard_job, ph->pilot_job->getComputeService());
 
                     ph->num_standard_job_submitted++;
-
                 }
             }
 
@@ -533,7 +532,7 @@ namespace wrench {
             for (auto task : ph->tasks) {
                 if ((task->getState() == WorkflowTask::READY) and (ph->num_standard_job_submitted < ph->num_hosts)) {
 
-                        StandardJob *standard_job = this->job_manager->createStandardJob(task, {});
+                        auto standard_job = this->job_manager->createStandardJob(task, {});
                         // hmm
                         WRENCH_INFO("Submitting task %s  as part of placeholder job %ld-%ld",
                                     task->getID().c_str(), placeholder_job->start_level, placeholder_job->end_level);

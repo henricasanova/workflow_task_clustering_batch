@@ -9,7 +9,7 @@
 
 namespace wrench {
 
-    PlaceHolderJob::PlaceHolderJob(PilotJob *pilot_job, unsigned long num_hosts, std::vector<WorkflowTask *> tasks,
+    PlaceHolderJob::PlaceHolderJob(std::shared_ptr<PilotJob> pilot_job, unsigned long num_hosts, std::vector<WorkflowTask *> tasks,
                                    unsigned long start_level, unsigned long end_level) {
 
         // Sort the tasks
@@ -29,7 +29,7 @@ namespace wrench {
         this->end_level = end_level;
     }
 
-    PlaceHolderJob::PlaceHolderJob(PilotJob *pilot_job, ClusteredJob *clustered_job, unsigned long start_level,
+    PlaceHolderJob::PlaceHolderJob(std::shared_ptr<PilotJob> pilot_job, ClusteredJob *clustered_job, unsigned long start_level,
                                    unsigned long end_level) {
         this->pilot_job = pilot_job;
         this->num_hosts = ULONG_MAX;

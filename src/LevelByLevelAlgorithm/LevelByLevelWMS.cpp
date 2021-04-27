@@ -406,7 +406,7 @@ namespace wrench {
         std::string output_string = "";
         for (auto task : placeholder_job->clustered_job->getTasks()) {
             if (task->getState() == WorkflowTask::READY) {
-                StandardJob *standard_job = this->job_manager->createStandardJob(task, {});
+                auto standard_job = this->job_manager->createStandardJob(task, {});
                 output_string += " " + task->getID();
 
                 WRENCH_INFO("Submitting task %s as part of placeholder job %ld-%ld",
@@ -517,7 +517,7 @@ namespace wrench {
         double makespan = cj->estimateMakespan(this->core_speed) * EXECUTION_TIME_FUDGE_FACTOR;
 
         // Create the pilot job
-        PilotJob *pj = this->job_manager->createPilotJob();
+        auto pj = this->job_manager->createPilotJob();
 
         PlaceHolderJob *replacement_placeholder_job =
                 new PlaceHolderJob(pj, cj,
