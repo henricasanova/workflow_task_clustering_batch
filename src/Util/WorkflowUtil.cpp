@@ -56,14 +56,15 @@ namespace wrench {
     double WorkflowUtil::estimateMakespan(std::vector<WorkflowTask *> tasks,
                                           unsigned long num_hosts, double core_speed) {
 
-      if (num_hosts == 0) {
-        throw std::runtime_error("Cannot estimate makespan with 0 hosts!");
-      }
+        if (num_hosts == 0) {
+            throw std::runtime_error("Cannot estimate makespan with 0 hosts!");
+        }
 
-      if (tasks.size() == 0) {
-        return 0.0;
-      }
+        if (tasks.size() == 0) {
+            return 0.0;
+        }
 
+        WRENCH_INFO("IN ESTIMATE MAKESPAN");
 //        // Sort the tasks
 //        std::sort(tasks.begin(), tasks.end(),
 //                  [](const WorkflowTask * t1, const WorkflowTask * t2) -> bool {
@@ -74,124 +75,114 @@ namespace wrench {
 //                      return (t1->getFlops() > t2->getFlops());
 //                  });
 
+        auto workflow = tasks[0]->getWorkflow();
 
-        Workflow *workflow = tasks[0]->getWorkflow();
+        // Initialize host idle dates
+        double idle_date[num_hosts];
+        for (unsigned int i=0; i < num_hosts; i++) {
+            idle_date[i] = 0.0;
+        }
 
-      // Initialize host idle dates
-      double idle_date[num_hosts];
-      for (unsigned int i=0; i < num_hosts; i++) {
-        idle_date[i] = 0.0;
-      }
+        unsigned long num_tasks = tasks.size();
 
-      unsigned long num_tasks = tasks.size();
+        // Create a list of "fake" tasks
+        std::map<WorkflowTask *, double> fake_tasks;  // WorkflowTask, completion time
 
-      // Create a list of "fake" tasks
-      std::tuple<WorkflowTask *, double> fake_tasks[num_tasks];  // WorkflowTask, completion time
+        WRENCH_INFO("HERE1");
+        // Insert all fake_tasks
+        for (auto task : tasks) {
+            fake_tasks[task] = -1.0;
+        }
 
-      // Insert all fake_tasks
-      unsigned int i=0;
-      for (auto task : tasks) {
-        std::tuple<WorkflowTask *, double> fake_task;
-        fake_task = std::make_tuple(task, -1.0);
-        fake_tasks[i++] = fake_task;
-      }
+        unsigned long num_scheduled_tasks = 0;
+        double current_time = 0.0;
 
-      unsigned long num_scheduled_tasks = 0;
-      double current_time = 0.0;
-
-      while (num_scheduled_tasks < num_tasks) {
+        WRENCH_INFO("HERE2");
+        while (num_scheduled_tasks < num_tasks) {
 
 //        WRENCH_INFO("ITERATION");
-        bool scheduled_something = false;
+            bool scheduled_something = false;
 
-        // Schedule ALL READY Tasks
-        for (i=0; i <  num_tasks; i++)  {
+            // Schedule ALL READY Tasks
+            for (auto real_task : tasks) {
 
-          auto ft = fake_tasks[i];
-
-          // Already scheduled?
-          if (std::get<1>(ft) >= 0.0) {
-            continue;
-          }
-
-          WorkflowTask *real_task = std::get<0>(ft);
-
-//          WRENCH_INFO("LOOKING AT TASK %s", real_task->getID().c_str());
-
-          // Determine whether the task is schedulable
-          bool schedulable = true;
-          for (auto parent : workflow->getTaskParents(real_task)) {
-            for (unsigned int k=0; k < num_tasks; k++) {
-              if (std::get<0>(fake_tasks[k]) == parent) {
-//                WRENCH_INFO("    LOOKING AT PARENT %s:  %.2lf", parent->getID().c_str(), std::get<1>(fake_tasks[k]));
-                if ((std::get<1>(fake_tasks[k]) > current_time) or
-                    (std::get<1>(fake_tasks[k]) < 0)) {
-                  schedulable = false;
-                  break;
+                // Already scheduled?
+                if (fake_tasks[real_task] >= 0.0) {
+                    continue;
                 }
-              }
-              if (not schedulable) {
-                break;
-              }
-            }
-          }
 
-          if (not schedulable) {
+                //WRENCH_INFO("LOOKING AT TASK %s", real_task->getID().c_str());
+
+                // Determine whether the task is schedulable
+                bool schedulable = true;
+                for (auto parent : workflow->getTaskParents(real_task)) {
+                    if ((fake_tasks[parent] > current_time) or
+                        (fake_tasks[parent] < 0)) {
+                        schedulable = false;
+                        break;
+                    }
+                }
+
+                if (not schedulable) {
 //            WRENCH_INFO("NOT SCHEDULABLE");
-            continue;
-          }
+                    continue;
+                }
 
-          for (unsigned int j=0; j < num_hosts; j++) {
+                for (unsigned int j=0; j < num_hosts; j++) {
 //            WRENCH_INFO("LOOKING AT HOST %d: %.2lf", j, idle_date[j]);
-            if (idle_date[j] <= current_time) {
+                    if (idle_date[j] <= current_time) {
 //              WRENCH_INFO("SCHEDULING TASK on HOST %d", j);
-              double new_time = current_time + real_task->getFlops() / core_speed;
-              fake_tasks[i] = std::make_tuple(std::get<0>(ft), new_time);
+                        double new_time = current_time + real_task->getFlops() / core_speed;
+                        fake_tasks[real_task] = new_time;
 
-              for (unsigned int k=0; k < num_tasks; k++) {
-//                WRENCH_INFO("------> %.2lf", std::get<1>(fake_tasks[k]));
-              }
+//                        for (unsigned int k=0; k < num_tasks; k++) {
+////                WRENCH_INFO("------> %.2lf", std::get<1>(fake_tasks[k]));
+//                        }
 
-              idle_date[j] = current_time + real_task->getFlops() / core_speed;
+                        idle_date[j] = current_time + real_task->getFlops() / core_speed;
 //              WRENCH_INFO("SCHEDULED TASK %s on host %d from time %.2lf-%.2lf",
 //                          real_task->getID().c_str(), j, current_time,
 //                          current_time + real_task->getFlops() / core_speed);
-              scheduled_something = true;
-              num_scheduled_tasks++;
-              break;
-            } else {
+                        scheduled_something = true;
+                        num_scheduled_tasks++;
+                        break;
+                    } else {
 //              WRENCH_INFO("THIS HOST DOESN'T WORK");
+                    }
+                }
             }
-          }
-        }
 
 //        WRENCH_INFO("UPDATING CURRENT TIME");
-        if (scheduled_something) {
-          // Set current time to min idle time
-          double min_idle_time = DBL_MAX;
-          for (unsigned int j = 0; j < num_hosts; j++) {
-            if (idle_date[j] < min_idle_time) {
-              min_idle_time = idle_date[j];
+            if (scheduled_something) {
+                // Set current time to min idle time
+                double min_idle_time = DBL_MAX;
+                for (unsigned int j = 0; j < num_hosts; j++) {
+                    if (idle_date[j] < min_idle_time) {
+                        min_idle_time = idle_date[j];
+                    }
+                }
+                current_time = min_idle_time;
+            } else {
+                double second_min_idle_time = DBL_MAX;
+                for (unsigned int j = 0; j < num_hosts; j++) {
+                    if ((idle_date[j] > current_time) and (idle_date[j] < second_min_idle_time)) {
+                        second_min_idle_time = idle_date[j];
+                    }
+                }
+                current_time = second_min_idle_time;
             }
-          }
-          current_time = min_idle_time;
-        } else {
-          double second_min_idle_time = DBL_MAX;
-          for (unsigned int j = 0; j < num_hosts; j++) {
-            if ((idle_date[j] > current_time) and (idle_date[j] < second_min_idle_time)) {
-              second_min_idle_time = idle_date[j];
-            }
-          }
-          current_time = second_min_idle_time;
-        }
 //        WRENCH_INFO("UPDATED CURRENT TIME TO %.2lf", current_time);
-      }
+        }
 
-      double makespan = 0;
-      for (unsigned int i=0; i < num_hosts; i++) {
-        makespan = std::max<double>(makespan, idle_date[i]);
-      }
-      return makespan;
+        WRENCH_INFO("DONE WITH WHILE");
+        double makespan = 0;
+        for (unsigned int i=0; i < num_hosts; i++) {
+            makespan = std::max<double>(makespan, idle_date[i]);
+        }
+
+        WRENCH_INFO("DONE WITH ESTIMATE MAKESPAN");
+
+        return makespan;
 
     }
 };
