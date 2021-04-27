@@ -4,6 +4,8 @@ message(STATUS "Cmake version ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CM
 project(task_clustering_batch_simulator)
 add_definitions("-Wall -Wno-unused-variable -Wno-unused-private-field")
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_BUILD_TYPE release)
+
 
 # include directories for dependencies and WRENCH libraries
 include_directories(src/ /usr/local/include /usr/local/include/wrench /opt/local/include )
