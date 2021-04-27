@@ -16,6 +16,7 @@
 #ifdef PRINT_RAM_MACOSX
 #include<mach/mach.h>
 #endif
+#include <unordered_map>
 
 #include "WorkflowUtil.h"
 
@@ -23,6 +24,8 @@ XBT_LOG_NEW_DEFAULT_CATEGORY(workflow_util, "Log category for Workflow Util");
 
 
 namespace wrench {
+
+std::unordered_map<WorkflowTask*, std::vector<WorkflowTask*>> lineage;
 
 #ifdef PRINT_RAM_MACOSX
     void WorkflowUtil::printRAM() {
@@ -55,6 +58,14 @@ namespace wrench {
      */
     double WorkflowUtil::estimateMakespan(std::vector<WorkflowTask *> tasks,
                                           unsigned long num_hosts, double core_speed) {
+
+        if (lineage.empty()) {
+            auto workflow = (*tasks.begin())->getWorkflow();
+            for (auto task : workflow->getTasks()) {
+                std::vector<WorkflowTask *> parents = task->getParents();
+                lineage[task] = parents;
+            }
+        }
 
         if (num_hosts == 0) {
             throw std::runtime_error("Cannot estimate makespan with 0 hosts!");
@@ -113,7 +124,7 @@ namespace wrench {
 
                 // Determine whether the task is schedulable
                 bool schedulable = true;
-                for (auto parent : workflow->getTaskParents(real_task)) {
+                for (auto parent : lineage[real_task]) {
                     if ((fake_tasks[parent] > current_time) or
                         (fake_tasks[parent] < 0)) {
                         schedulable = false;
