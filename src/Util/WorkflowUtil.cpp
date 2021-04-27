@@ -59,6 +59,10 @@ std::unordered_map<WorkflowTask*, std::vector<WorkflowTask*>> lineage;
     double WorkflowUtil::estimateMakespan(std::vector<WorkflowTask *> tasks,
                                           unsigned long num_hosts, double core_speed) {
 
+        if (tasks.size() == 0) {
+            return 0.0;
+        }
+
         if (lineage.empty()) {
             auto workflow = (*tasks.begin())->getWorkflow();
             for (auto task : workflow->getTasks()) {
@@ -71,11 +75,6 @@ std::unordered_map<WorkflowTask*, std::vector<WorkflowTask*>> lineage;
             throw std::runtime_error("Cannot estimate makespan with 0 hosts!");
         }
 
-        if (tasks.size() == 0) {
-            return 0.0;
-        }
-
-        WRENCH_INFO("IN ESTIMATE MAKESPAN");
 //        // Sort the tasks
 //        std::sort(tasks.begin(), tasks.end(),
 //                  [](const WorkflowTask * t1, const WorkflowTask * t2) -> bool {
@@ -86,13 +85,13 @@ std::unordered_map<WorkflowTask*, std::vector<WorkflowTask*>> lineage;
 //                      return (t1->getFlops() > t2->getFlops());
 //                  });
 
-        auto workflow = tasks[0]->getWorkflow();
 
         // Initialize host idle dates
         double idle_date[num_hosts];
-        for (unsigned int i=0; i < num_hosts; i++) {
-            idle_date[i] = 0.0;
-        }
+        memset(idle_date, 0, sizeof(double)*num_hosts);
+//        for (unsigned int i=0; i < num_hosts; i++) {
+//            idle_date[i] = 0.0;
+//        }
 
         unsigned long num_tasks = tasks.size();
 
@@ -114,14 +113,12 @@ std::unordered_map<WorkflowTask*, std::vector<WorkflowTask*>> lineage;
 
             // Schedule ALL READY Tasks
             for (auto real_task : tasks) {
-
                 // Already scheduled?
                 if (fake_tasks[real_task] >= 0.0) {
                     continue;
                 }
 
                 //WRENCH_INFO("LOOKING AT TASK %s", real_task->getID().c_str());
-
                 // Determine whether the task is schedulable
                 bool schedulable = true;
                 for (auto parent : lineage[real_task]) {
@@ -142,13 +139,7 @@ std::unordered_map<WorkflowTask*, std::vector<WorkflowTask*>> lineage;
 //            WRENCH_INFO("LOOKING AT HOST %d: %.2lf", j, idle_date[j]);
                     if (idle_date[j] <= current_time) {
 //              WRENCH_INFO("SCHEDULING TASK on HOST %d", j);
-                        double new_time = current_time + real_task_duration;
-                        fake_tasks[real_task] = new_time;
-
-//                        for (unsigned int k=0; k < num_tasks; k++) {
-////                WRENCH_INFO("------> %.2lf", std::get<1>(fake_tasks[k]));
-//                        }
-
+                        fake_tasks[real_task] = current_time + real_task_duration;
                         idle_date[j] = current_time + real_task_duration;
 //              WRENCH_INFO("SCHEDULED TASK %s on host %d from time %.2lf-%.2lf",
 //                          real_task->getID().c_str(), j, current_time,
@@ -165,8 +156,8 @@ std::unordered_map<WorkflowTask*, std::vector<WorkflowTask*>> lineage;
 //        WRENCH_INFO("UPDATING CURRENT TIME");
             if (scheduled_something) {
                 // Set current time to min idle time
-                double min_idle_time = DBL_MAX;
-                for (unsigned int j = 0; j < num_hosts; j++) {
+                double min_idle_time = idle_date[0];
+                for (unsigned int j = 1; j < num_hosts; j++) {
                     if (idle_date[j] < min_idle_time) {
                         min_idle_time = idle_date[j];
                     }
@@ -184,7 +175,6 @@ std::unordered_map<WorkflowTask*, std::vector<WorkflowTask*>> lineage;
 //        WRENCH_INFO("UPDATED CURRENT TIME TO %.2lf", current_time);
         }
 
-        WRENCH_INFO("DONE WITH WHILE");
         double makespan = 0;
         for (unsigned int i=0; i < num_hosts; i++) {
             makespan = std::max<double>(makespan, idle_date[i]);
