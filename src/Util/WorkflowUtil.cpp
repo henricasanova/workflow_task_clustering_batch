@@ -85,7 +85,6 @@ namespace wrench {
 //                      return (t1->getFlops() > t2->getFlops());
 //                  });
 
-
         // Initialize host idle dates
         double idle_date[num_hosts];
         memset(idle_date, 0, sizeof(double)*num_hosts);
@@ -98,7 +97,7 @@ namespace wrench {
         }
 
         // Create a list of "fake" tasks
-        std::map<WorkflowTask *, double> fake_tasks;  // WorkflowTask, completion time
+        std::unordered_map<WorkflowTask *, double> fake_tasks;  // WorkflowTask, completion time
 
         // Insert all fake_tasks
         for (auto task : tasks_to_schedule) {
