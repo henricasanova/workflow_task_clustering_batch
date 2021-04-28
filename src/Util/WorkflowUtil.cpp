@@ -92,11 +92,16 @@ namespace wrench {
 
         unsigned long num_tasks = tasks.size();
 
+        std::set<WorkflowTask *> tasks_to_schedule;
+        for (auto task : tasks) {
+            tasks_to_schedule.insert(task);
+        }
+
         // Create a list of "fake" tasks
         std::map<WorkflowTask *, double> fake_tasks;  // WorkflowTask, completion time
 
         // Insert all fake_tasks
-        for (auto task : tasks) {
+        for (auto task : tasks_to_schedule) {
             fake_tasks[task] = -1.0;
         }
 
@@ -107,12 +112,10 @@ namespace wrench {
 
             bool scheduled_something = false;
 
-            // Schedule ALL READY Tasks
-            for (auto real_task : tasks) {
-                // Already scheduled?
-                if (fake_tasks[real_task] >= 0.0) {
-                    continue;
-                }
+            std::set<WorkflowTask *> tasks_scheduled;
+
+            // Schedule Tasks
+            for (auto real_task : tasks_to_schedule) {
 
                 //WRENCH_INFO("LOOKING AT TASK %s", real_task->getID().c_str());
                 // Determine whether the task is schedulable
@@ -142,11 +145,16 @@ namespace wrench {
 //                          current_time + real_task->getFlops() / core_speed);
                         scheduled_something = true;
                         num_scheduled_tasks++;
+                        tasks_scheduled.insert(real_task);
                         break;
                     } else {
 //              WRENCH_INFO("THIS HOST DOESN'T WORK");
                     }
                 }
+            }
+
+            for (auto to_remove : tasks_scheduled) {
+                tasks_to_schedule.erase(to_remove);
             }
 
 //        WRENCH_INFO("UPDATING CURRENT TIME");
@@ -174,7 +182,6 @@ namespace wrench {
             makespan = std::max<double>(makespan, idle_date[i]);
         }
 
-        WRENCH_INFO("DONE WITH ESTIMATE MAKESPAN");
 
         return makespan;
 
