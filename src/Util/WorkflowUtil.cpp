@@ -109,18 +109,15 @@ namespace wrench {
         double current_time = 0.0;
 
         while (num_scheduled_tasks < num_tasks) {
-
             bool scheduled_something = false;
-
             std::set<WorkflowTask *> tasks_scheduled;
 
             // Schedule Tasks
-            for (auto real_task : tasks_to_schedule) {
-
+            for (auto const &real_task : tasks_to_schedule) {
                 //WRENCH_INFO("LOOKING AT TASK %s", real_task->getID().c_str());
                 // Determine whether the task is schedulable
                 bool schedulable = true;
-                for (auto parent : lineage[real_task]) {
+                for (auto const &parent : lineage[real_task]) {
                     if ((fake_tasks[parent] > current_time) or
                         (fake_tasks[parent] < 0)) {
                         schedulable = false;
@@ -133,18 +130,17 @@ namespace wrench {
                     continue;
                 }
 
+                double task_end_time = current_time + real_task->getFlops() / core_speed;
                 for (unsigned int j=0; j < num_hosts; j++) {
 //            WRENCH_INFO("LOOKING AT HOST %d: %.2lf", j, idle_date[j]);
                     if (idle_date[j] <= current_time) {
 //              WRENCH_INFO("SCHEDULING TASK on HOST %d", j);
-                        double task_end_time = current_time + real_task->getFlops() / core_speed;
                         fake_tasks[real_task] = task_end_time;
                         idle_date[j] = task_end_time;
 //              WRENCH_INFO("SCHEDULED TASK %s on host %d from time %.2lf-%.2lf",
 //                          real_task->getID().c_str(), j, current_time,
 //                          current_time + real_task->getFlops() / core_speed);
                         scheduled_something = true;
-                        num_scheduled_tasks++;
                         tasks_scheduled.insert(real_task);
                         break;
                     } else {
@@ -153,7 +149,8 @@ namespace wrench {
                 }
             }
 
-            for (auto to_remove : tasks_scheduled) {
+            num_scheduled_tasks += tasks_scheduled.size();
+            for (auto &to_remove : tasks_scheduled) {
                 tasks_to_schedule.erase(to_remove);
             }
 
@@ -181,7 +178,6 @@ namespace wrench {
         for (unsigned int i=1; i < num_hosts; i++) {
             makespan = std::max<double>(makespan, idle_date[i]);
         }
-
 
         return makespan;
 
