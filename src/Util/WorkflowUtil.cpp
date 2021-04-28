@@ -89,9 +89,6 @@ std::unordered_map<WorkflowTask*, std::vector<WorkflowTask*>> lineage;
         // Initialize host idle dates
         double idle_date[num_hosts];
         memset(idle_date, 0, sizeof(double)*num_hosts);
-//        for (unsigned int i=0; i < num_hosts; i++) {
-//            idle_date[i] = 0.0;
-//        }
 
         unsigned long num_tasks = tasks.size();
 
@@ -108,7 +105,6 @@ std::unordered_map<WorkflowTask*, std::vector<WorkflowTask*>> lineage;
 
         while (num_scheduled_tasks < num_tasks) {
 
-//        WRENCH_INFO("ITERATION");
             bool scheduled_something = false;
 
             // Schedule ALL READY Tasks
@@ -175,9 +171,10 @@ std::unordered_map<WorkflowTask*, std::vector<WorkflowTask*>> lineage;
 //        WRENCH_INFO("UPDATED CURRENT TIME TO %.2lf", current_time);
         }
 
-        double makespan = 0;
-        for (unsigned int i=0; i < num_hosts; i++) {
-            makespan = std::max<double>(makespan, idle_date[i]);
+        double makespan = idle_date[0];
+        for (unsigned int i=1; i < num_hosts; i++) {
+            if (idle_date[i] > makespan) makespan = idle_date[i];
+//            makespan = std::max<double>(makespan, idle_date[i]);
         }
 
         WRENCH_INFO("DONE WITH ESTIMATE MAKESPAN");
