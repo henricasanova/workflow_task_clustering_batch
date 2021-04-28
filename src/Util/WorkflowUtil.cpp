@@ -25,7 +25,7 @@ XBT_LOG_NEW_DEFAULT_CATEGORY(workflow_util, "Log category for Workflow Util");
 
 namespace wrench {
 
-std::unordered_map<WorkflowTask*, std::vector<WorkflowTask*>> lineage;
+    std::unordered_map<WorkflowTask*, std::vector<WorkflowTask*>> lineage;
 
 #ifdef PRINT_RAM_MACOSX
     void WorkflowUtil::printRAM() {
@@ -130,13 +130,13 @@ std::unordered_map<WorkflowTask*, std::vector<WorkflowTask*>> lineage;
                     continue;
                 }
 
-                double real_task_duration = real_task->getFlops() / core_speed;
                 for (unsigned int j=0; j < num_hosts; j++) {
 //            WRENCH_INFO("LOOKING AT HOST %d: %.2lf", j, idle_date[j]);
                     if (idle_date[j] <= current_time) {
 //              WRENCH_INFO("SCHEDULING TASK on HOST %d", j);
-                        fake_tasks[real_task] = current_time + real_task_duration;
-                        idle_date[j] = current_time + real_task_duration;
+                        double task_end_time = current_time + real_task->getFlops() / core_speed;
+                        fake_tasks[real_task] = task_end_time;
+                        idle_date[j] = task_end_time;
 //              WRENCH_INFO("SCHEDULED TASK %s on host %d from time %.2lf-%.2lf",
 //                          real_task->getID().c_str(), j, current_time,
 //                          current_time + real_task->getFlops() / core_speed);
@@ -154,16 +154,14 @@ std::unordered_map<WorkflowTask*, std::vector<WorkflowTask*>> lineage;
                 // Set current time to min idle time
                 double min_idle_time = idle_date[0];
                 for (unsigned int j = 1; j < num_hosts; j++) {
-                    if (idle_date[j] < min_idle_time) {
-                        min_idle_time = idle_date[j];
-                    }
+                    min_idle_time = std::min<double>(idle_date[j], min_idle_time);
                 }
                 current_time = min_idle_time;
             } else {
                 double second_min_idle_time = DBL_MAX;
                 for (unsigned int j = 0; j < num_hosts; j++) {
-                    if ((idle_date[j] > current_time) and (idle_date[j] < second_min_idle_time)) {
-                        second_min_idle_time = idle_date[j];
+                    if (idle_date[j] > current_time) {
+                        second_min_idle_time = std::min<double>(idle_date[j], second_min_idle_time);
                     }
                 }
                 current_time = second_min_idle_time;
@@ -173,8 +171,7 @@ std::unordered_map<WorkflowTask*, std::vector<WorkflowTask*>> lineage;
 
         double makespan = idle_date[0];
         for (unsigned int i=1; i < num_hosts; i++) {
-            if (idle_date[i] > makespan) makespan = idle_date[i];
-//            makespan = std::max<double>(makespan, idle_date[i]);
+            makespan = std::max<double>(makespan, idle_date[i]);
         }
 
         WRENCH_INFO("DONE WITH ESTIMATE MAKESPAN");
