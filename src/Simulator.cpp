@@ -31,9 +31,9 @@ int Simulator::main(int argc, char **argv) {
     simulation->init(&argc, argv);
 
     // Parse command-line arguments
-    if ((argc != 8) and (argc != 9)) {
+    if ((argc != 9) and (argc != 10)) {
         std::cerr << "\e[1;31mUsage: " << argv[0]
-                  << " <num_compute_nodes> <job trace file> <max jobs in system> <workflow specification> <workflow start time> <algorithm> <batch algorithm> [DISABLED: csv batch log file] [OPTIONAL: json result file]\e[0m"
+                  << " <num_compute_nodes> <job trace file> <real|fake> <max jobs in system> <workflow specification> <workflow start time> <algorithm> <batch algorithm> [DISABLED: csv batch log file] [OPTIONAL: json result file]\e[0m"
                   << "\n";
         std::cerr << "  \e[1;32m### workflow specification options ###\e[0m" << "\n";
         std::cerr << "    *  \e[1mindep:s:n:t1:t2\e[0m " << "\n";
@@ -214,17 +214,17 @@ int Simulator::main(int argc, char **argv) {
     }
 
     unsigned long max_num_jobs;
-    if ((sscanf(argv[3], "%lu", &max_num_jobs) != 1) or (max_num_jobs < 1)) {
+    if ((sscanf(argv[4], "%lu", &max_num_jobs) != 1) or (max_num_jobs < 1)) {
         std::cerr << "Invalid maximum number of jobs\n";
     }
 
 
     double workflow_start_time;
-    if ((sscanf(argv[5], "%lf", &workflow_start_time) != 1) or (workflow_start_time < 0)) {
+    if ((sscanf(argv[6], "%lf", &workflow_start_time) != 1) or (workflow_start_time < 0)) {
         std::cerr << "Invalid workflow start time\n";
     }
 
-    std::string scheduler_spec = std::string(argv[6]);
+    std::string scheduler_spec = std::string(argv[7]);
 
     // Setup the simulation platform
     setupSimulationPlatform(simulation, num_compute_nodes);
@@ -246,10 +246,17 @@ int Simulator::main(int argc, char **argv) {
 
     wrench::BatchComputeService *tmp_batch_service = nullptr;
     try {
+        std::string job_requested_time;
+        if (!strcmp(argv[3],"fake")) {
+            job_requested_time = "true";
+        } else {
+            job_requested_time = "false";
+        }
+
         tmp_batch_service = new BatchComputeService(login_hostname, compute_nodes, "",
                                                     {{BatchComputeServiceProperty::OUTPUT_CSV_JOB_LOG,                                             csv_batch_log},
                                                      {BatchComputeServiceProperty::BATCH_SCHEDULING_ALGORITHM,                                     std::string(
-                                                             argv[7])},
+                                                             argv[8])},
                                                      {BatchComputeServiceProperty::TASK_SELECTION_ALGORITHM,                                       "maximum_flops"},
                                                      {BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE,                                  std::string(
                                                              argv[2])},
@@ -257,7 +264,7 @@ int Simulator::main(int argc, char **argv) {
                                                      {BatchComputeServiceProperty::BATSCHED_CONTIGUOUS_ALLOCATION,                                 "true"},
                                                      {BatchComputeServiceProperty::BATSCHED_LOGGING_MUTED,                                         "true"},
                                                      {BatchComputeServiceProperty::IGNORE_INVALID_JOBS_IN_WORKLOAD_TRACE_FILE,                      "true"},
-                                                     {BatchComputeServiceProperty::USE_REAL_RUNTIMES_AS_REQUESTED_RUNTIMES_IN_WORKLOAD_TRACE_FILE, "true"},
+                                                     {BatchComputeServiceProperty::USE_REAL_RUNTIMES_AS_REQUESTED_RUNTIMES_IN_WORKLOAD_TRACE_FILE, job_requested_time},
                                                      {BatchComputeServiceProperty::SUBMIT_TIME_OF_FIRST_JOB_IN_WORKLOAD_TRACE_FILE, "0"},
                                                      {BatchComputeServiceProperty::TASK_STARTUP_OVERHEAD, "0"}
 
@@ -267,19 +274,9 @@ int Simulator::main(int argc, char **argv) {
                                                             {BatchComputeServiceMessagePayload::SUBMIT_PILOT_JOB_REQUEST_MESSAGE_PAYLOAD, 0.0},
                                                     });
     } catch (std::invalid_argument &e) {
+        std::cerr << "Giving up as I cannot instantiate the Batch Service: " << e.what() << "\n";
+        exit(1);
 
-        WRENCH_INFO("Cannot instantiate batch service: %s", e.what());
-        WRENCH_INFO("Trying the non-BATSCHED version with FCFS...");
-        try {
-            tmp_batch_service = new BatchComputeService(login_hostname, compute_nodes, "",
-                                                        {{BatchComputeServiceProperty::BATCH_SCHEDULING_ALGORITHM,    "FCFS"},
-                                                         {BatchComputeServiceProperty::SIMULATED_WORKLOAD_TRACE_FILE, std::string(
-                                                                 argv[2])}
-                                                        }, {});
-        } catch (std::invalid_argument &e) {
-            std::cerr << "Giving up as I cannot instantiate the Batch Service: " << e.what() << "\n";
-            exit(1);
-        }
     }
 
     batch_service = simulation->add(tmp_batch_service);
@@ -304,7 +301,7 @@ int Simulator::main(int argc, char **argv) {
     // Create the Workflow
     Workflow *workflow = nullptr;
     try {
-        workflow = createWorkflow(argv[4]);
+        workflow = createWorkflow(argv[5]);
     } catch (std::invalid_argument &e) {
         std::cerr << "Cannot create workflow: " << e.what() << "\n";
         exit(1);
@@ -332,18 +329,19 @@ int Simulator::main(int argc, char **argv) {
     std::cout << "SIMULATION TIME=" << elapsed << "\n";
     std::cout << "CSV LOG FILE=" << csv_batch_log << "\n";
 
-    if (argc == 9) {
-        std::string json_file_name = std::string(argv[8]);
+    if (argc == 10) {
+        std::string json_file_name = std::string(argv[9]);
 
         // std::cout << json_file_name << std::endl;
 
         Globals::sim_json["num_compute_nodes"] = argv[1];
         Globals::sim_json["job_trace_file"] = argv[2];
-        Globals::sim_json["max_sys_jobs"] = argv[3];
-        Globals::sim_json["workflow_specification"] = argv[4];
-        Globals::sim_json["start_time"] = argv[5];
-        Globals::sim_json["algorithm"] = argv[6];
-        Globals::sim_json["batch_algorithm"] = argv[7];
+        Globals::sim_json["job_requested_times"] = argv[3];
+        Globals::sim_json["max_sys_jobs"] = argv[4];
+        Globals::sim_json["workflow_specification"] = argv[5];
+        Globals::sim_json["start_time"] = argv[6];
+        Globals::sim_json["algorithm"] = argv[7];
+        Globals::sim_json["batch_algorithm"] = argv[8];
 
         Globals::sim_json["makespan"] = workflow->getCompletionDate() - workflow_start_time;
         Globals::sim_json["num_p_job_exp"] = this->num_pilot_job_expirations_with_remaining_tasks_to_do;
@@ -479,7 +477,7 @@ Workflow *Simulator::createIndepWorkflow(std::vector<std::string> spec_tokens) {
     for (unsigned long i = 0; i < num_tasks; i++) {
         unsigned long flops = m_udist(rng);
         auto t = workflow->addTask("Task_" + std::to_string(i), (double) flops, 1, 1, 1.0);
-        WRENCH_INFO("AAAAA   %s %lf", t->getID().c_str(), t->getFlops() );
+//        WRENCH_INFO("AAAAA   %s %lf", t->getID().c_str(), t->getFlops() );
     }
 
     return workflow;
@@ -566,7 +564,7 @@ Workflow *Simulator::createWorkflowFromFile(std::string type, std::vector<std::s
             throw std::runtime_error("Unknown workflow file type " + type);
         }
     } catch (std::invalid_argument &e) {
-        throw std::runtime_error("Cannot import workflow from file");
+        throw std::runtime_error("Cannot import workflow from file: " + std::string(e.what()));
     }
 
     auto workflow = new Workflow();

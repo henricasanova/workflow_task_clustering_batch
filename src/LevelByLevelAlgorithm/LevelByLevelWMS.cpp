@@ -101,7 +101,7 @@ namespace wrench {
 
             WRENCH_INFO("All workflow levels have been submitted!");
 
-            std::cout << "All levels have already been submitted" << std::endl;
+//            std::cout << "All levels have already been submitted" << std::endl;
 
             return;
         }
@@ -131,7 +131,7 @@ namespace wrench {
 
         WRENCH_INFO("Creating a new ongoing level for level %lu", level_to_submit);
 
-        printf("Creating a new ongoing level for level %lu of %lu\n", level_to_submit, (this->getWorkflow()->getNumLevels() - 1));
+//        printf("Creating a new ongoing level for level %lu of %lu\n", level_to_submit, (this->getWorkflow()->getNumLevels() - 1));
 
         OngoingLevel *new_ongoing_level = new OngoingLevel();
         new_ongoing_level->level_number = level_to_submit;
@@ -221,7 +221,7 @@ namespace wrench {
 
             job->setNumNodes(num_nodes_per_cluster);
 
-            std::cout << "NUM tasks in job: " << job->getNumTasks() << std::endl;
+            WRENCH_INFO("NUM tasks in job: %lu", job->getNumTasks());
 
             // Use prediction to compute the best number of nodes if oj-0
             if (job->getNumNodes() == 0) {
@@ -232,7 +232,7 @@ namespace wrench {
                 job->setNumNodes(num_nodes, true);
             }
 
-            std::cout << "Num requested nodes: " << job->getNumNodes() << std::endl;
+            WRENCH_INFO("Num requested nodes: %lu", job->getNumNodes());
 
             clustered_jobs.insert(job);
 
@@ -369,7 +369,7 @@ namespace wrench {
         // Just for kicks, check it was the pending one
         WRENCH_INFO("Got a Pilot Job Start event: %s", e->pilot_job->getName().c_str());
 
-        std::cout << "Got a pilot job start event" << std::endl;
+//        std::cout << "Got a pilot job start event" << std::endl;
 
         // Update queue waiting time
         this->simulator->total_queue_wait_time +=
@@ -395,8 +395,8 @@ namespace wrench {
         WRENCH_INFO("The corresponding placeholder job has %ld tasks",
                     placeholder_job->clustered_job->getTasks().size());
 
-        printf("The corresponding placeholder job has %ld tasks\n",
-               placeholder_job->clustered_job->getTasks().size());
+//        printf("The corresponding placeholder job has %ld tasks\n",
+//               placeholder_job->clustered_job->getTasks().size());
 
         // Mote the placeholder job to running
         ongoing_level->pending_placeholder_jobs.erase(placeholder_job);
@@ -446,9 +446,9 @@ namespace wrench {
                     placeholder_job->start_level, placeholder_job->end_level,
                     placeholder_job->pilot_job->getName().c_str());
 
-        printf("Got a pilot job expiration for a placeholder job that deals with levels %ld-%ld (%s)\n",
-               placeholder_job->start_level, placeholder_job->end_level,
-               placeholder_job->pilot_job->getName().c_str());
+//        printf("Got a pilot job expiration for a placeholder job that deals with levels %ld-%ld (%s)\n",
+//               placeholder_job->start_level, placeholder_job->end_level,
+//               placeholder_job->pilot_job->getName().c_str());
 
         // Check if there are unprocessed tasks
         bool unprocessed = false;
@@ -482,7 +482,7 @@ namespace wrench {
         }
 
         // TODO - this will break for all algorithms except OJ!
-        std::cout << "Removing level of expired job from ongoing_levels" << std::endl;
+//        std::cout << "Removing level of expired job from ongoing_levels" << std::endl;
 
         this->ongoing_levels.erase((int) ongoing_level->level_number);
 
@@ -610,7 +610,7 @@ namespace wrench {
             ongoing_level->running_placeholder_jobs.erase(placeholder_job);
             ongoing_level->completed_placeholder_jobs.insert(placeholder_job);
             // TODO - this isn't removing from this->ongoing_levels???
-            std::cout << "Finished all jobs in a placeholder!" << std::endl;
+//            std::cout << "Finished all jobs in a placeholder!" << std::endl;
         }
 
         /**
@@ -640,7 +640,7 @@ namespace wrench {
 
             WRENCH_INFO("Level %ld is finished!", ongoing_level->level_number);
 
-            printf("Level %ld is finished!\n", ongoing_level->level_number);
+//            printf("Level %ld is finished!\n", ongoing_level->level_number);
             this->last_level_completed = ongoing_level->level_number;
 
             this->ongoing_levels.erase(ongoing_level->level_number);

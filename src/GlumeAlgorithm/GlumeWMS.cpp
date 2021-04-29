@@ -46,7 +46,7 @@ namespace wrench {
             this->waitForAndProcessNextEvent();
         }
 
-        std::cout << "#SPLITS=" << this->number_of_splits << "\n";
+        WRENCH_INFO("#SPLITS= %lu", this->number_of_splits);
 
         Globals::sim_json["num_splits"] = this->number_of_splits;
 
@@ -73,7 +73,7 @@ namespace wrench {
 
         double parent_runtime = this->proxyWMS->findMaxDuration(this->running_placeholder_jobs);
 
-        std::cout << "\nParent job runtime: " << parent_runtime << std::endl;
+        WRENCH_INFO("Parent job runtime: %lf", parent_runtime);
 
         // Use these to keep track of the "best" grouping
         std::tuple<double, double, unsigned long> entire_workflow = estimateJob(start_level, end_level, parent_runtime);
@@ -81,9 +81,9 @@ namespace wrench {
         double requested_execution_time = std::get<1>(entire_workflow);
         unsigned long requested_parallelism = std::get<2>(entire_workflow);
 
-        std::cout << "entire dag num nodes: " << requested_parallelism << std::endl;
-        std::cout << "entire dag wait_time: " << estimated_wait_time << std::endl;
-        std::cout << "entire dag runtime: " << requested_execution_time << std::endl;
+        WRENCH_INFO("entire dag num nodes: %lu", requested_parallelism);
+        WRENCH_INFO("entire dag wait_time: %lf", estimated_wait_time);
+        WRENCH_INFO("entire dag runtime: %lf", requested_execution_time);
 
         // Calculate leeway needed for entire dag vs. currently running parent
         double max_leeway_entire_dag = std::max<double>(0, (parent_runtime - estimated_wait_time));
@@ -95,29 +95,29 @@ namespace wrench {
             requested_execution_time += best_leeway_entire_dag;
             estimated_wait_time = this->proxyWMS->estimateWaitTime(requested_parallelism, requested_execution_time,
                                                         this->simulation->getCurrentSimulatedDate(), &sequence);
-            std::cout << "entire dag recalculated wait_time: " << estimated_wait_time << std::endl;
-            std::cout << "entire dag recalculated runtime: " << requested_execution_time << std::endl;
+            WRENCH_INFO("entire dag recalculated wait_time: %lf",estimated_wait_time);
+            WRENCH_INFO("entire dag recalculated runtime: %lf", requested_execution_time);
         }
 
         // TODO - should we overlap with parent?
         double best_makespan = estimated_wait_time + requested_execution_time;
 
-        std::cout << "entire dag makespan: " << (estimated_wait_time + requested_execution_time) << std::endl;
+        WRENCH_INFO("entire dag makespan: %lf", (estimated_wait_time + requested_execution_time));
 
         unsigned long partial_dag_end_level = end_level;
 
         // Find the best split
         for (unsigned long i = start_level; i < num_levels - 1; i++) {
-            std::cout << "\nCandidate end level: " << i << std::endl;
+            WRENCH_INFO("Candidate end level: %lu", i);
 
             std::tuple<double, double, unsigned long> start_to_split = estimateJob(start_level, i, parent_runtime);
             double wait_one = std::get<0>(start_to_split);
             double run_one = std::get<1>(start_to_split);
             unsigned long nodes_one = std::get<2>(start_to_split);
 
-            std::cout << "1: num nodes: " << std::get<2>(start_to_split) << std::endl;
-            std::cout << "1: wait_time: " << wait_one << std::endl;
-            std::cout << "1: runtime: " << run_one << std::endl;
+            WRENCH_INFO("1: num nodes: %lu", std::get<2>(start_to_split));
+            WRENCH_INFO("1: wait_time: %lf", wait_one);
+            WRENCH_INFO("1: runtime: %lf", run_one);
 
             // Calculate leeway needed for first group vs. currently running parent
             double max_leeway_one = std::max<double>(0, (parent_runtime - wait_one));
