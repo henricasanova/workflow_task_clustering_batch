@@ -335,10 +335,10 @@ int Simulator::main(int argc, char **argv) {
         // std::cout << json_file_name << std::endl;
 
         Globals::sim_json["num_compute_nodes"] = argv[1];
-        Globals::sim_json["job_trace_file"] = argv[2];
+        Globals::sim_json["workload_file"] = argv[2];
         Globals::sim_json["job_requested_times"] = argv[3];
         Globals::sim_json["max_sys_jobs"] = argv[4];
-        Globals::sim_json["workflow_specification"] = argv[5];
+        Globals::sim_json["workflow_file"] = argv[5];
         Globals::sim_json["start_time"] = argv[6];
         Globals::sim_json["algorithm"] = argv[7];
         Globals::sim_json["batch_algorithm"] = argv[8];
