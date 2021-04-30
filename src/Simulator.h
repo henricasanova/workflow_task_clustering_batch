@@ -6,7 +6,7 @@
 #include "wrench-dev.h"
 
 
-#define EXECUTION_TIME_FUDGE_FACTOR 1.2
+#define EXECUTION_TIME_FUDGE_FACTOR 1.5
 
 namespace wrench {
 
